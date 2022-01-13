@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+
+<body>
+  <p id="info">Loading...</p>
+  <!--Paragraf u kojem upisujemo fps i ostale informacije-->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/p5.js"></script>
+  <!--Omogućava korišćenje p5 preko CDN (mreža za isporuku sadržaja otvorenog koda)-->
+  <script>
+    var drop = []; //novi niz
+
+    function setup() { //Setup funkcija se poziva jednom kada se pokrene program, koristi se za definisanje početnih svojstva ekrana(pozadina,canvas...)
+
+      var dimenzijaX = prompt("Ukucajte dimenziju canvasa X-ose", windowWidth); //Tražimo korisniku da ukuca željenu širinu canvasa
+      var dimenzijaY = prompt("Ukucajte dimenziju canvasa Y-ose", windowHeight); //Tražimo korisniku da ukuca željenu visinu canvasa
+
+      //Provera inputa korisnika ako je null ili nije popunio
+      if (dimenzijaY == null || dimenzijaY == "" || dimenzijaX == null || dimenzijaX == "") {
+        alert("Popunite lepo polje"); //alert pokazuje okvir sa porukom alert takodje uklanja focus sa trenutnog prozora
+        document.location.reload(true); //ako nije lepo popunio polje stranica se osvežava
+
+      } else if (isNaN(dimenzijaX) || isNaN(dimenzijaX)) { //Provera inputa ako nije broj
+        alert("X i Y moraju da budu broj"); //alert pokazuje okvir sa porukom alert takodje uklanja focus sa trenutnog prozora
+        document.location.reload(true); //ako nije lepo popunio polje stranica se osvežava
+
+      } else { //U ostalim slučajevima odnosno kada je dobro uneta širina i visina
+        alert("Vas dimenzije Canvasa su " + parseInt(dimenzijaY) + ", " + parseInt(dimenzijaX));
+        console.log("Canvas X = " + parseInt(dimenzijaX));//ispis canvasa u consoli
+        console.log("Canvas Y = " + parseInt(dimenzijaY));
+
+        createCanvas(parseInt(dimenzijaX), parseInt(dimenzijaY), WEBGL); //Pravljenje Canvasa ekrana dimenzijaX i dimenzijaY to su dimenzije koje je korisnik uneo
+        //parseInt pretvara string u ceo broj
+        for (var i = 0; i < 200; i++) {
+          drop[i] = new Drop(); //200 novih nizova drop[0]..drop[199] povezan sa Drop funkciom
+        }
+      }
+    }
+
+    var y1 = 0;
+    var speed = 1;
+    var gravity = 0.5;
+    var x;
+    var y;
+
+    function draw() {
+      x = map(mouseX, 0, width, 0, 255); //map funcija primer map(x,1,10,100,105) x je vrednost gde se čuvaju podatci prvi i drugi broj su kao niz od 1 do 10 (1,2,3...9,10)
+      //treći i četvrti broj kao niz od 105 do 109 map nam omogucava da prvu skalu pretvorimo u drugu sto znači 1i2 pretvaraju se u 105 3i4 u 106 .. 5i6 u 107  .. 9i10 u 109 sto znaci ako je x bio 5 sad je 107
+      y = map(mouseY, 0, height, 0, 255); //U nasem slucaju map pretvara poziciju kursora x i y koja moze da bude od 0 do velicine ekrana (1200 npr) map pretvara u broj do 255
+      background(x, y, 250); //Stavljamo mapiranu poziciju kursora u background i samim pomeranjem misa kotrolisemo background
+      //Da nisamo koristili map pomeranjem misa ne bi lepo pretvaralo poziciju u background zato sto background prima vrednosti od 0 do 255.
+      //Možemo da pratimo vrednosti na ekranu kako se Pozadina ekvivalentno menja sa MouseX i MouseY da nije map morali bi da pozicije misa mnozimo sa odredjenim brojem kako bi dobili raspon od 0 do 255
+
+      push(); //Funkcija nam omogučava da naš novi objekat ne prima podešavaja od proslog objekta npr background,translate...
+
+      for (var i = 0; i < 200; i++) {
+        drop[i].show(); //drop[0]..drop[199] poziva show
+        drop[i].update(); //drop[0]..drop[199] poziva update
+      }
+      pop(); //zatvara push funciju
+
+      orbitControl(); //omogucava kretanje misem (levi klik, desni klik, tockic)
+
+      push();
+
+      fill(255, 204, 0); //fill daje boju Objektima (RGB)
+
+      rotateY(frameCount * 0.01); //framecount broj frejmova koji je prikazan od kako se program pokrenuo
+      rotateX(frameCount * 0.01);//rotateZ,rotateY,rotateX roticija po Z,Y,X osi sto znaci sto veci broj brze se krece rotacija
+      rotateZ(frameCount * 0.02);
+
+      sphere(60); //Kugla
+      torus(100, 10); //prvi prsten, prvi parametar veličina okvira (r), drugi debljina okvira prvi prsten
+      torus(150, 5); //drugi prsten
+      torus(200, 3); //trći prsten
+      torus(250, 2); //poslednji prsten
+
+      pop();
+
+      for (i = 0; i < 3; i = i + 0.1) {
+        push();
+
+        translate(windowWidth * i, y1 * 2, -1500); //pomeranje objeckat translate(x,y,z), windowWidth sirina ekrana * i da bi se ravnomerno rasporedile loptice po ekranu, y1 omogučava da padaju
+        fill(random(0, 255), random(0, 255), random(0, 255)); //boji male loptice svake sekunde sa nasumičnom bojom
+        sphere(20); //lopta mala
+
+        pop();
+      }
+
+      for (i = 0; i < 3; i = i + 0.1) {
+        push();
+
+        translate(-windowWidth * i, y1 * 2, -1500); //pomeranje objeckat translate(x,y,z), windowWidth sirina ekrana * i da bi se ravnomerno rasporedile loptice po ekranu, y1 omogučava da padaju
+        //-windowWidth je zato sto smo na createCanvas napisali WEBGL kordinatni sistem krece na sredini
+        fill(random(0, 255), random(0, 255), random(0, 255)); //boji male loptice svake sekunde sa nasumičnom bojom
+        sphere(20);//loptica
+
+        pop();
+      }
+
+      push();
+
+      y1 = y1 + speed;//y1 sabiramo sa speed-om i dodeljijemo ga lopticama
+      speed = speed + gravity; //brzini dodajemo gravitaciju
+
+      if (y1 > 547) { //Kada y1 dodje do 547 onda speed množimo sa -0.95 da bi se loptica vratila gore.
+
+        speed = -0.95 * speed;
+      }
+      pop();
+
+    //informacije sa ekrana
+      document.getElementById("info").innerHTML = "[FPS=" + Math.round(frameRate()) +
+        "|MouseX =" + Math.round(mouseX) + "|MouseY=" + Math.round(mouseY) + "|Pozadina=(" + Math.round(x) +
+         ", " + Math.round(y) + " ,250)]";
+    //Math.round zaokruzuje broj na decimalu FrameRate trenutni FPS
+    }
+
+    function windowResized() { //funkcija windowsResized se poziva svaki put kad prozor pretrazivača promeni veličinu
+      resizeCanvas(window.innerWidth, window.innerHeight); //Kada se promeni veličina prozora pretraživača mi menjamo veličinu canvasa po trenutnim dimezijama
+
+    }
+
+    function mouseClicked() { //Ako pritisnemo misem
+      if (_targetFrameRate == "60") { //ako je 60fps screen pretvori ga u 30 fps
+        frameRate(30);
+
+      } else if (_targetFrameRate == "30") { //ako je 30fps screen zamrzni ekran
+        frameRate(0);
+        document.getElementById("info").innerHTML = "[FPS=" + Math.round(frameRate()) +
+          "|MouseX =" + Math.round(mouseX) + "|MouseY=" + Math.round(mouseY) + "|Pozadina=(" + Math.round(x) +
+           ", " + Math.round(y) + " ,250)]";
+
+      } else { // u ostalim slucajevima kada nije ni 60 ni 30 vrati na 60 fps
+        frameRate(60);
+      }
+    }
+
+    function Drop() { //Funcija drop za sneg
+//This pokazuje na onog ko je pozvao funciju (Drop[0]..Drop[199]) | 63,64 linija koda
+      this.x = random(0, width); //Trenutnoj vrednost x dodeli joj nasumičan broj od 0 do širine ekrana da bi rasporedili pahulje
+      this.y = random(0, height); //Trenutnoj vrednost y dodeli joj nasumičan broj od 0 do visina ekrana da bi rasporedili pahulje
+
+      this.show = function() { //63 linija koda poziva
+        noStroke(); //brise okvir crne boje na pahulji
+        fill(255); //boja
+        ellipse(this.x, this.y, random(1, 5), random(1, 5)); //Pravljenje pahulja koji primaju nasumične vrednosti
+        ellipse(-this.x, this.y, random(1, 5), random(1, 5)); //-this.x je zbog kordinatnog pocetka
+
+      }
+      //64 linija koda poziva
+      this.update = function() { //funcija koja nam pravi da pahulje padaju
+        //THIS nam ukuzuje na onog ko je pozvao funciju update npr pahulja broj 22!
+        this.speed = random(5, 10); //Brzina pahulje nasumična
+        this.gravity = 1.05; //Postavljamo gravitaciju
+        this.y = this.y + this.speed * this.gravity;//Brzina padanja pahulje koja je pozvala funciju
+
+        if (this.y > height) { //Ako je pahulja previse pala odnosno ako je y > height
+          this.y = random(0, -height);//toj pahulji dodeli novu vrednost y
+          this.gravity = random(5, 10);//dodeli joj novu brzinu
+        }
+      }
+    }
+  </script>
+  <!--
+style je  za CSS
+margin,padding - restartujemo margine i padding na 0
+overflow-y,overflow-x - sakrivamo traku za pomeranje (hidden)
+-->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      overflow-y: hidden;
+      overflow-x: hidden;
+    }
+  </style>
+</body>
+
+</html>
